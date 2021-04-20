@@ -13,7 +13,8 @@
 
 # the corpus:
 # a collection of more-or-less gothic tales from Project Gutenberg
-demo_dir = "/Users/katrinerk/Desktop/demo_corpora_mini/"
+# demo_dir = "/Users/katrinerk/Desktop/demo_corpora_mini/"
+demo_dir = 'wiki'
 
 
 ##########
@@ -29,7 +30,8 @@ import string
 # input: a string that may contain multiple words.
 # output: a list of strings, preprocessed
 def preprocess(s):
-    # split up into words, lowercase, remove punctuation at beginning and end of word
+    '''Tokenizes a multiword string'''
+    # split up into words, lowercase, remove punctuation at beginning and end of word 
     return [ w.lower().strip(string.punctuation) for w in s.split() ]
 
 # or like this:
@@ -54,15 +56,16 @@ def test_preprocess():
 import os
 
 def do_word_count(demo_dir, numdims):
+    '''Reads every txt file in a corpus-folder, and returns top-freq (ie numdims) words in the corpus'''
     # we store the counts in word_count
     # using NLTK's FreqDist
-    word_count = nltk.FreqDist()
+    word_count = nltk.FreqDist()  # ~= collections.Counter()
     
     # We iterate over the corpus files
     for filename in os.listdir(demo_dir):
         if filename.endswith("txt"):
             print("reading file", filename)
-            text = open(os.path.join(demo_dir, filename)).read()
+            text = open(os.path.join(demo_dir, filename), encoding='utf8').read()
             word_count.update(preprocess(text))
             
     # keep_wordfreq is a list of (word, frequency) pairs
@@ -112,6 +115,7 @@ def test_wordcount():
 # to an index, which will be its place in the table of counts,
 # that is, its dimension in the space
 def make_word_index(keep_these_words):
+    '''Indexes a list of words and returns a dict, where each item is word_str:idx_int '''
     # make an index that maps words from 'keep_these_words' to their index
     word_index = { }
     for index, word in enumerate(keep_these_words):
@@ -132,6 +136,7 @@ def make_word_index(keep_these_words):
 # so pair each word with all its context items in the context window.
 # Return a list of these pairs. 
 def co_occurrences(wordsequence):
+    '''Takes a list of tokens, and returns a list of tuples (token, token +-1 +-2)'''
     target_context_pairs = [ ]
 
     # for a sequence of length N, count from 0 to N-1 
@@ -185,7 +190,7 @@ def make_space(demo_dir, word_index, numdims):
     space = { }
     # fill the space with all zeros.
     for word in relevant_words:
-        space[ word ] = numpy.zeros(numdims, dtype = numpy.int)
+        space[ word ] = numpy.zeros(numdims, dtype = numpy.int)  # each item = word:[0 * numdims]
 
     ##
     # Design decision: We want to take sentence boundaries into account
@@ -199,7 +204,7 @@ def make_space(demo_dir, word_index, numdims):
         if filename.endswith("txt"):
             print("reading file", filename)
             # read the text
-            text = open(os.path.join(demo_dir, filename)).read()
+            text = open(os.path.join(demo_dir, filename), encoding='utf8').read()
             # split the text into sentences
             sentences = sent_detector.tokenize(text)
             # process one sentence at a time
@@ -217,7 +222,7 @@ def make_space(demo_dir, word_index, numdims):
                         space[ target ][cxitem_index] += 1
 
 
-    return space
+    return space # each item = targetWord: [neighborCount,0,0,...]
 
 ###
 # run this
@@ -259,13 +264,13 @@ def ppmi_transform(space, word_index):
     # row_sums is a dictionary mapping from target words to row sums
     row_sums = { }
     for word in space.keys():
-        row_sums[word] = space[word].sum()
+        row_sums[word] = space[word].sum() # sum(np array), ie, sum(count_vector) 
 
     # #(_, c): for each context word, sum up all its counts
     # This should be the same as #(t, _) because the set of targets
     # is the same as the set of contexts.
     # col_sums is a dictionary mapping from context word indices to column sums
-    col_sums = { }
+    col_sums = { }  #each item = idx:sum(count of idxed word)
     for index in word_index.values():
         col_sums[ index ] = sum( [ vector[ index ] for vector in space.values() ])
 
@@ -431,7 +436,7 @@ def test_svdspace():
 import math
 
 def veclen(vector):
-    return math.sqrt(numpy.sum(numpy.square(vector)))
+    return math.sqrt(numpy.sum(numpy.square(vector))) # vector length = sum([s^2 for s in v])^0.5
 
 def cosine(word1, word2, space):
     vec1 = space[ word1 ]
