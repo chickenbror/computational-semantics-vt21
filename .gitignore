@@ -246,3 +246,5 @@ Thumbs.db #thumbnail cache on Windows
 02-vector-semantics/assignment/pretrained/raw_wikipediaktw.npy
 02-vector-semantics/assignment/pretrained/sub_glov.npy
 02-vector-semantics/assignment/pretrained/svd50_wikipedia10k.npy
+*.npy
+BlueMetalLlamas/assignment-02/calvin/wiki/wikipedia.txt
