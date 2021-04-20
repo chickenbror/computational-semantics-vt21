@@ -62,7 +62,7 @@ def do_word_count(demo_dir, numdims):
     for filename in os.listdir(demo_dir):
         if filename.endswith("txt"):
             print("reading file", filename)
-            text = open(os.path.join(demo_dir, filename), encoding="utf8").read()
+            text = open(os.path.join(demo_dir, filename), encoding='utf8').read()
             word_count.update(preprocess(text))
             
     # keep_wordfreq is a list of (word, frequency) pairs
@@ -199,7 +199,7 @@ def make_space(demo_dir, word_index, numdims):
         if filename.endswith("txt"):
             print("reading file", filename)
             # read the text
-            text = open(os.path.join(demo_dir, filename)).read()
+            text = open(os.path.join(demo_dir, filename), encoding='utf8').read()
             # split the text into sentences
             sentences = sent_detector.tokenize(text)
             # process one sentence at a time
