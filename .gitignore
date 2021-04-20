@@ -240,3 +240,6 @@ Thumbs.db #thumbnail cache on Windows
 
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,python,jupyternotebooks,emacs
+
+# Own
+BlueMetalLlamas/assignment-02/sigrid_jonsson/pretrained
