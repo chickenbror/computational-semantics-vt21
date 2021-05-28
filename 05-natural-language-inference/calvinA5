@@ -50,13 +50,23 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 55,
+   "execution_count": 79,
    "metadata": {},
    "outputs": [],
    "source": [
-    "from torchtext.legacy.data import Field, BucketIterator, TabularDataset\n",
-    "device = torch.device('cpu')\n",
-    "def dataloader(path_to_snli):\n",
+    "import torch\n",
+    "import torch.nn as nn\n",
+    "from torchtext.data import Field, BucketIterator, TabularDataset\n",
+    "device = torch.device('cuda:0')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def dataloader(path_to_snli, batch_size=8):\n",
     "    \n",
     "    #Fields: premise sent, hypothesis sent, relation label\n",
     "    Tokens = Field(tokenize=lambda x:x.split(), lower=True, batch_first=True) #TODO lowercase?\n",
@@ -65,8 +75,8 @@
     "    fields = [('premise',Tokens),('hypothesis',Tokens),('label',Labels)]\n",
     "    \n",
     "    #Process from csv files\n",
-    "    train,dev,test = TabularDataset.splits(\n",
-    "            path=path_to_snli, train='simple_snli_1.0_train.csv', dev='simple_snli_1.0_dev.csv', test='simple_snli_1.0_test.csv',\n",
+    "    train,test = TabularDataset.splits(\n",
+    "            path=path_to_snli, train='simple_snli_1.0_train.csv', test='simple_snli_1.0_test.csv',\n",
     "            format='csv', fields=fields, skip_header=False, \n",
     "            csv_reader_params = {'delimiter':'\\t','quotechar':'、'})\n",
     "    \n",
@@ -75,35 +85,40 @@
     "    Tokens.build_vocab(train)\n",
     "\n",
     "    #Batch iterator\n",
-    "    train_iter, dev_iter, test_iter = BucketIterator.splits(\n",
-    "            (train,dev,test), batch_size=batch_size, shuffle=True, device=device,\n",
-    "             sort_within_batch=True, sort_key=lambda x: len(x.context))\n",
+    "    train_iter, test_iter = BucketIterator.splits(\n",
+    "            (train,test), batch_size=batch_size, shuffle=True, device=device,\n",
+    "             sort_within_batch=True, sort_key=lambda x: len(x.premise)+len(x.hypothesis))\n",
     "    \n",
-    "    return train_iter, dev_iter, test_iter, Tokens.vocab, Labels.vocab\n"
+    "    return train_iter, test_iter, Tokens.vocab, Labels.vocab\n"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 56,
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "train_iter, test_iter, vocab, labels = dataloader('simple-snli')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
    "metadata": {},
    "outputs": [
     {
-     "ename": "TypeError",
-     "evalue": "__init__() got an unexpected keyword argument 'dev'",
-     "output_type": "error",
-     "traceback": [
-      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
-      "\u001b[1;31mTypeError\u001b[0m                                 Traceback (most recent call last)",
-      "\u001b[1;32m<ipython-input-56-0393e1eaeadf>\u001b[0m in \u001b[0;36m<module>\u001b[1;34m\u001b[0m\n\u001b[1;32m----> 1\u001b[1;33m \u001b[0mtrain_iter\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mdev_iter\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mtest_iter\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mTokens\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mvocab\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mLabels\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mvocab\u001b[0m \u001b[1;33m=\u001b[0m \u001b[0mdataloader\u001b[0m\u001b[1;33m(\u001b[0m\u001b[1;34m'simple-snli'\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m",
-      "\u001b[1;32m<ipython-input-55-1e1f95fedfbf>\u001b[0m in \u001b[0;36mdataloader\u001b[1;34m(path_to_snli)\u001b[0m\n\u001b[0;32m     10\u001b[0m \u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m     11\u001b[0m     \u001b[1;31m#Process from csv files\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[1;32m---> 12\u001b[1;33m     train,dev,test = TabularDataset.splits(\n\u001b[0m\u001b[0;32m     13\u001b[0m             \u001b[0mpath\u001b[0m\u001b[1;33m=\u001b[0m\u001b[0mpath_to_snli\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mtrain\u001b[0m\u001b[1;33m=\u001b[0m\u001b[1;34m'simple_snli_1.0_train.csv'\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mdev\u001b[0m\u001b[1;33m=\u001b[0m\u001b[1;34m'simple_snli_1.0_dev.csv'\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mtest\u001b[0m\u001b[1;33m=\u001b[0m\u001b[1;34m'simple_snli_1.0_test.csv'\u001b[0m\u001b[1;33m,\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m     14\u001b[0m             \u001b[0mformat\u001b[0m\u001b[1;33m=\u001b[0m\u001b[1;34m'csv'\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mfields\u001b[0m\u001b[1;33m=\u001b[0m\u001b[0mfields\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mskip_header\u001b[0m\u001b[1;33m=\u001b[0m\u001b[1;32mFalse\u001b[0m\u001b[1;33m,\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n",
-      "\u001b[1;32m~\\anaconda3\\lib\\site-packages\\torchtext\\legacy\\data\\dataset.py\u001b[0m in \u001b[0;36msplits\u001b[1;34m(cls, path, root, train, validation, test, **kwargs)\u001b[0m\n\u001b[0;32m     75\u001b[0m         \u001b[1;32mif\u001b[0m \u001b[0mpath\u001b[0m \u001b[1;32mis\u001b[0m \u001b[1;32mNone\u001b[0m\u001b[1;33m:\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m     76\u001b[0m             \u001b[0mpath\u001b[0m \u001b[1;33m=\u001b[0m \u001b[0mcls\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mdownload\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mroot\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[1;32m---> 77\u001b[1;33m         train_data = None if train is None else cls(\n\u001b[0m\u001b[0;32m     78\u001b[0m             os.path.join(path, train), **kwargs)\n\u001b[0;32m     79\u001b[0m         val_data = None if validation is None else cls(\n",
-      "\u001b[1;32m~\\anaconda3\\lib\\site-packages\\torchtext\\legacy\\data\\dataset.py\u001b[0m in \u001b[0;36m__init__\u001b[1;34m(self, path, format, fields, skip_header, csv_reader_params, **kwargs)\u001b[0m\n\u001b[0;32m    282\u001b[0m                     \u001b[0mfields\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mappend\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mfield\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m    283\u001b[0m \u001b[1;33m\u001b[0m\u001b[0m\n\u001b[1;32m--> 284\u001b[1;33m         \u001b[0msuper\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mTabularDataset\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mself\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0m__init__\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mexamples\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mfields\u001b[0m\u001b[1;33m,\u001b[0m \u001b[1;33m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m\u001b[0;32m    285\u001b[0m \u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m    286\u001b[0m \u001b[1;33m\u001b[0m\u001b[0m\n",
-      "\u001b[1;31mTypeError\u001b[0m: __init__() got an unexpected keyword argument 'dev'"
-     ]
+     "data": {
+      "text/plain": [
+       "['<unk>', '<pad>', 'entailment', 'contradiction', 'neutral', '-']"
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
     }
    ],
    "source": [
-    "train_iter, dev_iter, test_iter, Tokens.vocab, Labels.vocab = dataloader('simple-snli')"
+    "[labels.itos[i] for i in range(len(labels))]"
    ]
   },
   {
@@ -167,39 +182,30 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 49,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import torch"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 50,
+   "execution_count": 77,
    "metadata": {},
    "outputs": [
     {
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "tensor([[[1, 1, 1, 1],\n",
+      "tensor([[[1, 3, 1, 1],\n",
       "         [2, 2, 2, 2],\n",
       "         [3, 3, 3, 3]],\n",
       "\n",
-      "        [[1, 1, 1, 1],\n",
+      "        [[1, 3, 1, 1],\n",
       "         [2, 2, 2, 2],\n",
       "         [3, 3, 3, 3]],\n",
       "\n",
-      "        [[1, 1, 1, 1],\n",
+      "        [[1, 3, 1, 1],\n",
       "         [2, 2, 2, 2],\n",
       "         [3, 3, 3, 3]],\n",
       "\n",
-      "        [[1, 1, 1, 1],\n",
+      "        [[1, 3, 1, 1],\n",
       "         [2, 2, 2, 2],\n",
       "         [3, 3, 3, 3]],\n",
       "\n",
-      "        [[1, 1, 1, 1],\n",
+      "        [[1, 3, 1, 1],\n",
       "         [2, 2, 2, 2],\n",
       "         [3, 3, 3, 3]]])\n",
       "tensor([[3, 3, 3, 3],\n",
@@ -213,15 +219,13 @@
    "source": [
     "def pooling(input_tensor):\n",
     "    \n",
-    "    # input tensor: BxNxD => swap last two dims to BxDxN\n",
-    "    tens = torch.transpose(input_tensor, 1,2)\n",
-    "    \n",
-    "    # reduce the last dim to max(N) => BxDx1\n",
-    "    output_tensor, idxs = torch.max( tens, dim=2)\n",
+    "    # input tensor: BxNxD \n",
+    "    # reduce dim1 to max(N) => Bx1xD\n",
+    "    output_tensor, idxs = torch.max( input_tensor, dim=1)\n",
     "    \n",
     "    return output_tensor\n",
     "\n",
-    "test_tens = torch.stack( [torch.tensor([[1,1,1,1,],[2,2,2,2],[3,3,3,3]])]*5, dim=0)\n",
+    "test_tens = torch.stack( [torch.tensor([[1,3,1,1],[2,2,2,2],[3,3,3,3]])]*5, dim=0)\n",
     "print(test_tens)\n",
     "print( pooling(test_tens) )"
    ]
@@ -243,57 +247,48 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 73,
+   "execution_count": 71,
    "metadata": {},
    "outputs": [],
    "source": [
-    "\n",
     "def combine_premise_and_hypothesis(premise, hypothesis):\n",
     "    \n",
     "    #input: BxD, BxD\n",
     "    p,h = premise, hypothesis\n",
-    "    B,D = p.shape # batchsize, numdims\n",
     "    \n",
-    "    concats = torch.cat([p,h], dim=1)\n",
     "    abs_diffs = abs(p-h)\n",
     "    products =  p*h\n",
     "\n",
-    "#     concatenated = []\n",
-    "#     for b in range(B):\n",
-    "#         elements = [p[b],h[b],abs_diffs[b],products[b]]\n",
-    "#         concat = torch.cat(elements)\n",
-    "#         concatenated.append(concat)\n",
-    "#     output = torch.stack(concatenated)\n",
-    "\n",
-    "    output = torch.cat([p, h, abs_diffs, products], dim=1)\n",
-    "\n",
+    "    output = torch.cat([p, h, abs_diffs, products], dim=1) # Concat vector in dim1 (skip dim0, ie batchsize)\n",
+    "    \n",
     "    return output # Bx(D*4)"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 95,
+   "execution_count": 117,
    "metadata": {},
    "outputs": [
     {
      "data": {
       "text/plain": [
-       "torch.Size([5, 3, 3])"
+       "tensor([[ 1,  2,  3,  4,  5,  6,  3,  3,  3,  4, 10, 18],\n",
+       "        [ 1,  2,  3,  4,  5,  6,  3,  3,  3,  4, 10, 18],\n",
+       "        [ 1,  2,  3,  4,  5,  6,  3,  3,  3,  4, 10, 18],\n",
+       "        [ 1,  2,  3,  4,  5,  6,  3,  3,  3,  4, 10, 18],\n",
+       "        [ 1,  2,  3,  4,  5,  6,  3,  3,  3,  4, 10, 18]])"
       ]
      },
-     "execution_count": 95,
+     "execution_count": 117,
      "metadata": {},
      "output_type": "execute_result"
     }
    ],
    "source": [
-    "one = torch.tensor( [[[1,0,0],[2,0,0],[3,0,0]]]*5 )\n",
-    "two = torch.tensor( [[[4,0,0],[5,0,0],[6,0,0],[7,0,0]]]*5 )\n",
+    "one = torch.tensor( [[1,2,3]]*5 )\n",
+    "two = torch.tensor( [[4,5,6]]*5 )\n",
     "\n",
-    "# combine_premise_and_hypothesis(one, two)\n",
-    "# torch.cat([one,two], dim=1).shape #5,7,3  B,SeqLen,D\n",
-    "# torch.cat([one,two], dim=2).shape #5,3,6  B,SeqLen,D*2\n",
-    "one.shape # 5,3,3  B,SeqLen, D"
+    "combine_premise_and_hypothesis(one, two)"
    ]
   },
   {
@@ -309,26 +304,38 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
+   "execution_count": 121,
    "metadata": {},
    "outputs": [],
    "source": [
     "class SNLIModel(nn.Module):\n",
-    "    def __init__(self, ...):\n",
-    "        # your code goes here\n",
-    "        self.embeddings = ...\n",
-    "        self.rnn = ...\n",
-    "        self.classifier = ...\n",
+    "    def __init__(self, vocab_dim, num_labels, h_dim):\n",
+    "        super(SNLIModel, self).__init__()\n",
+    "        self.embeddings = nn.Embedding(vocab_dim, h_dim)\n",
+    "        self.rnn = nn.LSTM(h_dim, h_dim, batch_first=True, bidirectional=True )\n",
+    "        self.classifier = nn.Linear(8*h_dim, num_labels) \n",
+    "        self.dropout = nn.Dropout(0.2) \n",
     "        \n",
     "    def forward(self, premise, hypothesis):\n",
-    "        p = ...\n",
-    "        h = ...\n",
+    "       #1)Encode the Hypothesis and the Premise using one shared bidirectional LSTM\n",
+    "        #Embed premise & hypothesis sentences\n",
+    "        p, h = self.embeddings(premise), self.embeddings(hypothesis) #BxNxD\n",
     "        \n",
-    "        p_pooled = pooling(...)\n",
-    "        h_pooled = pooling(...)\n",
+    "        #Encode through BiLSTM\n",
+    "        p,(_, _) = self.rnn(p)# BxNxHD*2\n",
+    "        h,(_, _) = self.rnn(h)\n",
+    "        p, h = self.dropout(p), self.dropout(h)\n",
     "        \n",
-    "        ph_representation = combine_premise_and_hypothesis(...)\n",
-    "        predictions = ...\n",
+    "       #2)Perform max over the tokens in the premise and the hypothesis\n",
+    "        # Max pool the embeddings\n",
+    "        p_pooled, h_pooled = pooling(p), pooling(h) #BxNxHD*2 => BxHD*2\n",
+    "       \n",
+    "       #3)Combine the encoded premise and encoded hypothesis into one representation\n",
+    "        ph_representation = combine_premise_and_hypothesis(p_pooled, h_pooled) #BxD => B x HD*2*4\n",
+    "        ph_representation = self.dropout(ph_representation)\n",
+    "        \n",
+    "       #4)Predict the relationship \n",
+    "        predictions = self.classifier(ph_representation)\n",
     "        \n",
     "        return predictions"
    ]
@@ -353,19 +360,90 @@
    "cell_type": "code",
    "execution_count": null,
    "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Average total loss: 0.7616666515482262\r"
+     ]
+    }
+   ],
+   "source": [
+    "# train_iter, test_iter, vocab, labels = dataloader('simple-snli')\n",
+    "\n",
+    "epochs,learning_rate = 3, 0.001\n",
+    "\n",
+    "snli_model = SNLIModel( len(vocab), len(labels), 32)\n",
+    "snli_model.to(device)\n",
+    "loss_function = nn.CrossEntropyLoss()\n",
+    "optimizer = torch.optim.Adam(snli_model.parameters(), lr=learning_rate)\n",
+    "\n",
+    "#Training model\n",
+    "from statistics import mean\n",
+    "total_loss = [] \n",
+    "for _ in range(epochs):\n",
+    "    for i, batch in enumerate(train_iter):\n",
+    "        \n",
+    "        premise, hypothesis = batch.premise, batch.hypothesis\n",
+    "        label = batch.label  # gold label of batch\n",
+    "        \n",
+    "        output = snli_model(premise, hypothesis)\n",
+    "        \n",
+    "#         print(premise.shape) #BxN\n",
+    "#         print(output.view(-1,len(labels)).shape) #BxL\n",
+    "#         print(label.view(-1).shape) #Bx1\n",
+    "#         break\n",
+    "        \n",
+    "        loss = loss_function(output, label.view(-1)) # modelout:BxL, target:B\n",
+    "        total_loss += [loss.item()]\n",
+    "\n",
+    "        print(f'Average total loss: {mean(total_loss)}', end='\\r')\n",
+    "        \n",
+    "        # compute gradients; # update parameters; # reset gradients\n",
+    "        loss.backward();     optimizer.step();    optimizer.zero_grad()\n",
+    "    \n",
+    "#     print()\n",
+    "#     break"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
    "outputs": [],
    "source": [
-    "train_iter, test_iter = dataloader(path_to_folder)\n",
-    "\n",
-    "loss_function = ...\n",
-    "optimizer = ...\n",
-    "model = ...\n",
-    "\n",
-    "for _ in range(epochs):\n",
-    "    # train model\n",
-    "    ...\n",
+    "# Test with test_iter\n",
+    "test_loss = []\n",
+    "snli_model.eval()\n",
+    "for i, batch in enumerate(test_iter):\n",
     "    \n",
-    "# test model after all epochs are completed"
+    "    premise, hypothesis = batch.premise, batch.hypothesis\n",
+    "    label = batch.label  # gold labels of batch\n",
+    "\n",
+    "    with torch.no_grad(): # dont collect gradients when testing\n",
+    "        output = snli_model(premise, hypothesis)\n",
+    "    batch_loss = loss_function(output, label.view(-1))\n",
+    "    test_loss += [batch_loss.item()]\n",
+    "\n",
+    "    print('Average test loss: ', mean(test_loss), end='\\r')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Save:\n",
+    "torch.save(snli_model.state_dict(), 'snli_model.pt')\n",
+    "\n",
+    "# Load:\n",
+    "# vocabsize, num_labels, h_dim = len(vocab),len(labels),32  \n",
+    "\n",
+    "# snli_model = SNLIModel(vocab_dim, num_labels, h_dim)\n",
+    "# snli_model.load_state_dict(torch.load('snli_model.pt'), )\n",
+    "# snli_model.eval()"
    ]
   },
   {
@@ -393,7 +471,8 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "**Your answer should go here**"
+    "**Ans:**\n",
+    "Apply the model on the training data to evaluation the accuracy."
    ]
   },
   {
@@ -438,7 +517,7 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.8.5"
+   "version": "3.7.4"
   }
  },
  "nbformat": 4,
