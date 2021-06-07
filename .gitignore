@@ -255,3 +255,8 @@ BlueMetalLlamas/assignment-02/calvin/vector-semantics-Copy1.ipynb
 03-distributed-representations-and-language-models/assignment/Group4_A3.zip
 *.pt
 *.zip
+
+BlueMetalLlamas/*/sigrid_jonsson/*.csv
+BlueMetalLlamas/*/sigrid_jonsson/*.txt
+BlueMetalLlamas/*/sigrid_jonsson/*/*.csv
+BlueMetalLlamas/*/sigrid_jonsson/*/*.txt
